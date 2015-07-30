@@ -15,6 +15,7 @@ class ImageProcess
     public $minHeight = null;
     public $maxWidth = null;
     public $maxHeight = null;
+    public $resizable = false;
 
     public function __construct()
     {
@@ -173,10 +174,7 @@ class ImageProcess
      */
     public function resize($ratio = 100)
     {
-        if ($ratio > min(array($this->width, $this->height))) {
-            $width = $this->width;
-            $height = $this->height;
-        } else {
+        if ($this->resizable === true || $ratio < min(array($this->width, $this->height))) {
             if ($this->width >= $this->height) {
                 $width = intval($this->width / $this->height * $ratio);
                 $height = $ratio;
@@ -184,6 +182,9 @@ class ImageProcess
                 $height = intval($this->height / $this->width * $ratio);
                 $width = $ratio;
             }
+        } else {
+            $width = $this->width;
+            $height = $this->height;
         }
 
         $this->output = imagecreatetruecolor($width, $height);
