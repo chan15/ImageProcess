@@ -3,7 +3,6 @@
 class ImageProcess
 {
     public $image = null;
-    public $newName = null;
     public $type = null;
     public $width = null;
     public $heith = null;
@@ -32,8 +31,30 @@ class ImageProcess
         if (file_exists($image)) {
             $this->originName = pathinfo($image, PATHINFO_FILENAME);
             $this->originExt = pathinfo($image, PATHINFO_EXTENSION);
-            list($this->width, $this->height, $this->type) = $this->imageInfo($image);
+            list($this->width, $this->height, $this->type) = $this->imageInfo($image);;
             $this->image = call_user_func("imagecreatefrom{$this->type}", $image);
+
+            if ($this->type === 'jpeg') {
+                $exif = exif_read_data($image);
+
+                if(!empty($exif['Orientation'])) {
+                    switch($exif['Orientation']) {
+                        case 8:
+                            $this->image = imagerotate($this->image, 90, 0);
+                            break;
+                        case 3:
+                            $this->image = imagerotate($this->image, 180, 0);
+                            break;
+                        case 6:
+                            $this->image = imagerotate($this->image, -90, 0);
+                            break;
+                    }
+                }
+            }
+
+
+            $this->width = imagesx($this->image);
+            $this->height = imagesy($this->image);
         } else {
             echo '<pre>';
             var_dump('檔案不存在');
@@ -234,6 +255,17 @@ class ImageProcess
         $type = $imageInfo['mime'];
         $types = explode('/', $type);
         $type = $types[1];
+
+        if ($type === 'jpeg') {
+            $exif = exif_read_data($image);
+
+            if(!empty($exif['Orientation'])) {
+                if ($exif['Orientation'] === 8 || $exif['Orientation'] === 6) {
+                    $width = $imageInfo[1];
+                    $height = $imageInfo[0];
+                }
+            }
+        }
 
         return array($width, $height, $type);
     }
