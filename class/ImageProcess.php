@@ -53,7 +53,6 @@ class ImageProcess
                 }
             }
 
-
             $this->width = imagesx($this->image);
             $this->height = imagesy($this->image);
         } else {
@@ -197,21 +196,51 @@ class ImageProcess
      * @param string $image
      * @param integer $left
      * @param integer $top
+     * @param integer $resizeWidth
+     * @param integer $resizeHeight
      * @return void
      */
-    public function waterMark($image = null, $left = 0, $top = 0)
+    public function waterMark($image = null, $left = 0, $top = 0, $resizeWidth = 0, $resizeHeight = 0)
     {
+        $resizeWidth = (int) $resizeWidth;
+        $resizeHeight = (int) $resizeHeight;
         list($width, $height, $type) = $this->imageInfo($image);
         $waterMark = call_user_func("imagecreatefrom{$type}", $image);
         imagealphablending($waterMark, false);
         imagesavealpha($waterMark, true);
+        $resize = false;
+
+        if ($resizeWidth !== 0 || $resizeHeight !== 0) {
+            $resize = true;
+        }
+
+        if ($resize) {
+            if ($resizeHeight === 0) {
+                $resizeHeight = intval($height * $resizeWidth / $width);
+            }
+
+            if ($resizeWidth === 0) {
+                $resizeWidth = intval($width * $resizeHeight / $height);
+            }
+
+            $im = imagecreatetruecolor($resizeWidth, $resizeHeight);
+            imagealphablending($im, false);
+            imagesavealpha($im, true);
+            imagecopyresampled($im, $waterMark, 0, 0, 0, 0, $resizeWidth, $resizeHeight, $width, $height);
+        }
 
         if ($this->output === null) {
             $this->output = imagecreatetruecolor($this->width, $this->height);
             imagecopyresampled($this->output, $this->image, 0, 0, 0, 0, $this->width, $this->height, $this->width, $this->height);
         }
 
-        imagecopyresampled($this->output, $waterMark, $left, $top, 0, 0, $width, $height, $width, $height);
+        if ($resize) {
+            imagecopyresampled($this->output, $im, $left, $top, 0, 0, $resizeWidth, $resizeHeight, $resizeWidth, $resizeHeight);
+            imagedestroy($im);
+        } else {
+            imagecopyresampled($this->output, $waterMark, $left, $top, 0, 0, $width, $height, $width, $height);
+        }
+
         imagedestroy($waterMark);
     }
 
